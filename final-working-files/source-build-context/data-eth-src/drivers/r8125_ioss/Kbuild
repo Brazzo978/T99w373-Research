@@ -1,0 +1,11 @@
+
+ifeq ($(building_out_of_srctree),1)
+ccflags-y += -I$(src)/../ioss/include/
+ccflags-y += -I$(src)/../r8125/src/
+endif
+
+ccflags-y += -I$(srctree)/techpack/data-eth/drivers/ioss/include
+ccflags-y += -I$(srctree)/techpack/data-eth/drivers/r8125/src
+
+obj-$(CONFIG_R8125_IOSS) += r8125_ioss.o
+

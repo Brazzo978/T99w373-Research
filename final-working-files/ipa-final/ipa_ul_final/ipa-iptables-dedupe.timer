@@ -1,0 +1,11 @@
+[Unit]
+Description=Periodic IPA iptables dedupe
+
+[Timer]
+OnBootSec=90s
+OnUnitActiveSec=60s
+AccuracySec=10s
+Unit=ipa-iptables-dedupe.service
+
+[Install]
+WantedBy=timers.target

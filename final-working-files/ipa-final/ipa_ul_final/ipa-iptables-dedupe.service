@@ -1,0 +1,8 @@
+[Unit]
+Description=Deduplicate QCMAP IPA iptables rules
+After=QCMAP_ConnectionManagerd.service netmgrd.service qcmap-radio-on.service
+Wants=QCMAP_ConnectionManagerd.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/ipa-iptables-dedupe.sh

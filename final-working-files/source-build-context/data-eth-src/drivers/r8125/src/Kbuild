@@ -1,0 +1,16 @@
+
+# Features enabled
+
+ccflags-y += -DENABLE_USE_FIRMWARE_FILE
+ccflags-y += -DCONFIG_ASPM -DENABLE_S5WOL -DENABLE_EEE -DENABLE_TX_NO_CLOSE -DCONFIG_R8125_NAPI -DCONFIG_R8125_VLAN -DENABLE_DOUBLE_VLAN
+ccflags-y += -DENABLE_MULTIPLE_TX_QUEUE -DENABLE_RSS_SUPPORT -DENABLE_LIB_SUPPORT
+
+obj-$(CONFIG_R8125) += r8125.o
+
+r8125-y := r8125_n.o \
+		rtl_eeprom.o \
+		rtltool.o \
+		r8125_rss.o \
+		r8125_lib.o \
+		r8125_firmware.o
+

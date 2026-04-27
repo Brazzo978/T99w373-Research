@@ -1,0 +1,7 @@
+[Unit]
+Description=Conservative QCMAP IPA stack healthcheck
+After=multi-user.target pcie-enabler.service ipacm.service QCMAP_ConnectionManagerd.service netmgrd.service qcmap-radio-on.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/ipa-stack-healthcheck.sh

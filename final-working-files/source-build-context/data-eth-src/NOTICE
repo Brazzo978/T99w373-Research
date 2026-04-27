@@ -1,0 +1,286 @@
+Copyright (c) 2021 The Linux Foundation. All rights reserved.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License version 2 and
+only version 2 as published by the Free Software Foundation.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+________________________________________
+
+Copyright (C) 2007-2009 STMicroelectronics Ltd
+Copyright (C) 2021 Toshiba Electronic Devices & Storage Corporation
+
+This file has been derived from the STMicro Linux driver,
+and developed or modified for TC956X.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2, or (at your option)
+any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+________________________________________
+
+Copyright (C) 2018 Synopsys, Inc. and/or its affiliates.
+Copyright (C) 2021 Toshiba Electronic Devices & Storage Corporation
+
+This file has been derived from the STMicro and Synopsys Linux driver,
+and developed or modified for TC956X.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2, or (at your option)
+any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+_______________________________________
+
+Copyright (C) 2011 STMicroelectronics Ltd
+Copyright (C) 2021 Toshiba Electronic Devices & Storage Corporation
+
+This file has been derived from the STMicro Linux driver,
+and developed or modified for TC956X.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2, or (at your option)
+any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+____________________________________
+
+Copyright (C) 2021 Toshiba Electronic Devices & Storage Corporation
+
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2, or (at your option)
+any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+____________________________________
+
+Copyright (C) 2011-2012  Vayavya Labs Pvt Ltd
+Copyright (C) 2021 Toshiba Electronic Devices & Storage Corporation
+
+This file has been derived from the STMicro and Synopsys Linux driver,
+and developed or modified for TC956X.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2, or (at your option)
+any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+____________________________________
+
+Copyright (C) 2019 Synopsys, Inc. and/or its affiliates.
+Copyright (C) 2021 Toshiba Electronic Devices & Storage Corporation
+
+This file has been derived from the STMicro and Synopsys Linux driver,
+and developed or modified for TC956X.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2, or (at your option)
+any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+____________________________________
+
+Copyright (C) 2013  Vayavya Labs Pvt Ltd
+Copyright (C) 2021 Toshiba Electronic Devices & Storage Corporation
+
+This file has been derived from the STMicro and Vayavya Linux driver,
+and developed or modified for TC956X.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2, or (at your option)
+any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+____________________________________
+
+Copyright (C) 2009  STMicroelectronics Ltd
+Copyright (C) 2021 Toshiba Electronic Devices & Storage Corporation
+
+This file has been derived from the STMicro Linux driver,
+and developed or modified for TC956X.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2, or (at your option)
+any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+____________________________________
+
+Copyright(C) 2007-2011 STMicroelectronics Ltd
+Copyright (C) 2021 Toshiba Electronic Devices & Storage Corporation
+
+This file has been derived from the STMicro Linux driver,
+and developed or modified for TC956X.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2, or (at your option)
+any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+___________________________________
+
+Copyright (C) 2016 STMicroelectronics (R&D) Limited
+Copyright (C) 2021 Toshiba Electronic Devices & Storage Corporation
+
+This file has been derived from the STMicro Linux driver,
+and developed or modified for TC956X.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2, or (at your option)
+any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+___________________________________
+
+ Copyright(c) 2021 Realtek Semiconductor Corp. All rights reserved.
+
+ This program is free software; you can redistribute it and/or modify it
+ under the terms of the GNU General Public License as published by the Free
+ Software Foundation; either version 2 of the License, or (at your option)
+ any later version.
+
+ This program is distributed in the hope that it will be useful, but WITHOUT
+ ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ more details.
+
+ You should have received a copy of the GNU General Public License along with
+ this program; if not, see <http://www.gnu.org/licenses/>.
+
+ Author:
+ Realtek NIC software team <nicfae@realtek.com>
+ No. 2, Innovation Road II, Hsinchu Science Park, Hsinchu 300, Taiwan
+___________________________________
+
+SPDX-License-Identifier: GPL-2.0-only
+Copyright (C) 2007-2009  STMicroelectronics Ltd
+
+Author: Giuseppe Cavallaro <peppe.cavallaro@st.com>
+___________________________________
+
+SPDX-License-Identifier: GPL-2.0-only
+
+Copyright (c) 2018-19 Linaro Limited
+___________________________
+
+SPDX-License-Identifier: GPL-2.0-only
+
+Copyright (C) 2015  STMicroelectronics Ltd
+
+Author: Alexandre Torgue <alexandre.torgue@st.com>
+___________________________
+
+SPDX-License-Identifier: GPL-2.0-only
+
+Copyright (C) 2007-2015  STMicroelectronics Ltd
+
+Author: Alexandre Torgue <alexandre.torgue@st.com>
+___________________________
+
+SPDX-License-Identifier: (GPL-2.0 OR MIT)
+Copyright (c) 2018 Synopsys, Inc. and/or its affiliates.
+___________________________
+
+SPDX-License-Identifier: GPL-2.0-only
+
+Copyright (C) 2007-2009  STMicroelectronics Ltd
+
+Author: Giuseppe Cavallaro <peppe.cavallaro@st.com>
+___________________________
+
+SPDX-License-Identifier: GPL-2.0-only
+
+Copyright (C) 2007-2011  STMicroelectronics Ltd
+
+Author: Giuseppe Cavallaro <peppe.cavallaro@st.com>
+
+Documentation available at:
+http://www.stlinux.com
+Support available at:
+https://bugzilla.stlinux.com/
+___________________________

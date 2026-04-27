@@ -1,0 +1,37 @@
+[Unit]
+SourcePath=/usr/bin/ipacm
+Description= IPACM Service
+Before= QCMAP_ConnectionManagerd.service
+After= start_stop_ipa_fws.service local-fs.target systemd-tmpfiles-setup.service disable-selinux.service
+DefaultDependencies=no
+
+[Service]
+Restart=no
+Environment=IPA_ABI_BRIDGE_MODE=translate
+Environment=IPA_ABI_BRIDGE_ALLOW_IFACES=eth0,rmnet_data0,rmnet_data1
+Environment=IPA_ABI_BRIDGE_TRANSLATE_IFACES=eth0,rmnet_data0,rmnet_data1
+Environment=IPA_ABI_BRIDGE_TX=1
+Environment=IPA_ABI_BRIDGE_RX=1
+Environment=IPA_ABI_BRIDGE_EXT=1
+Environment=IPA_ABI_BRIDGE_RT_FLT_LOG=1
+Environment=IPA_ABI_BRIDGE_RT_FLT_TRANSLATE=1
+Environment=IPA_ABI_BRIDGE_FAIL_CLOSED=1
+Environment=IPA_ABI_BRIDGE_HEXDUMP_ONCE=0
+Environment=IPA_ABI_BRIDGE_LOG=/tmp/ipacm_abi_bridge_final.log
+Environment=LD_PRELOAD=/usr/lib/libipacm_abi_bridge_final.so
+ExecStartPre=udevadm trigger --settle --subsystem-match=wwan_ioctl --subsystem-match=ipa --subsystem-match=ipaNatTable --subsystem-match=ipa_adpl --subsystem-match=ipa_odl_ctl --action=add
+ExecStartPre=+chmod 660 /dev/wwan_ioctl /dev/ipa /dev/ipaNatTable /dev/ipa_adpl /dev/ipa_odl_ctl
+ExecStartPre=+chown -h radio.radio /dev/wwan_ioctl /dev/ipa /dev/ipaNatTable /dev/ipa_adpl /dev/ipa_odl_ctl
+ExecStartPre=+/bin/sh -c 'rm -f /usrdata/ipacm_log.txt || true'
+ExecStartPre=+/bin/sh -c 'if ! grep -q "on" /etc/data/ipa/log_mode 2>/dev/null; then ln -snf /dev/null /usrdata/ipacm_log.txt || true; fi'
+ExecStartPre=+sync
+ExecStart=/usr/bin/ipacm
+User=radio
+Group=radio
+SupplementaryGroups=diag inet
+AmbientCapabilities=CAP_NET_ADMIN
+StandardOutput=null
+StandardError=inherit
+
+[Install]
+WantedBy=local-fs.target

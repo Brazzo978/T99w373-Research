@@ -1,0 +1,399 @@
+[2026-04-15 00:00] Avvio indagine IPA fix Foxconn.
+- Confermato stato workspace e presenza varianti pcie_enabler_ipaV2..V21.
+- Dalla documentazione locale (contesto.md, agents.md): crash riproducibile in av8l_fast_map durante ioss_ipa_register -> ipa_eth_client_conn_pipes.
+- Override DT runtime (iommu-group/iommu-map/iommu-dma) non cambiano group effettivo RTL8125 (resta group 10).
+- Strategia corrente: analisi sorgenti IOSS/r8125_ioss per correggere input mapping IPA invece di ulteriori patch solo pcie_enabler.
+[2026-04-15 00:01] Root-cause candidata identificata e patchata.
+- File: data-eth-src/drivers/ioss/ioss_mem.c
+- Bug trovato: llcc_mem_pa() calcolava PA con offset invertito: phys + (virt_base - addr).
+- Effetto: PA errati/underflow per buffer LLCC => mapping IPA/IOMMU potenzialmente invalido => crash in av8l_fast_map.
+- Fix applicato: PA = phys_base + (addr - virt_base), con guard su TCM non attivo.
+[2026-04-15 00:02] Verifica build fix.
+- Build stack data-eth completata con successo su sorgente kernel 04700 copiato in /tmp (path senza spazi).
+- Artefatti generati e salvati con suffisso _llccpa_fix:
+  - ioss_rebuilt_llccpa_fix.ko
+  - r8125_stack_llccpa_fix.ko
+  - r8125_ioss_rebuilt_llccpa_fix.ko
+- Prossimo step: test live su Foxconn con sequenza load manuale e verifica assenza Oops av8l_fast_map.
+[2026-04-15 00:03] Test live Foxconn (wall serio).
+- Device ADB stabile: d95ed2c3 (Foxconn).
+- Test eseguito con stack attuale caricato: pcie_enabler + r8125 (già presenti), poi ioss_rebuilt_llccpa_fix + r8125_ioss_rebuilt_llccpa_fix.
+- Inserimento moduli riuscito (RET=0), ma su trigger IPA (`eth0 up` / refresh work) Oops ancora presente.
+- Crash invariato: av8l_fast_map <- arm_smmu_map <- iommu_map <- ipa3_iommu_map <- ipa3_smmu_map_eth_pipes <- ipa_eth_client_conn_pipes_internal <- ioss_ipa_register.
+- Evidenza nuova importante: i PA loggati ora sono coerenti/page-aligned (es. 0x824ed800) invece di valori chiaramente corrotti tipo c0ff.... Quindi il fix LLCC PA è corretto ma NON sufficiente da solo.
+- Ipotesi aggiornata: resta un problema nel dominio IOMMU IPA ETH (pmds/domain state), non solo nei parametri buffer.
+[2026-04-15 00:04] Richiesta utente: disattivato autoload servizi al boot.
+- Eseguito stop+disable+mask persistente per:
+  - pcie-enabler.service
+  - ipa-eth.service
+- Verifica: entrambi risultano "masked" e linkati a /dev/null in /etc/systemd/system.
+[2026-04-15 00:05] Nuova causa crash isolata (evidenza forte).
+- Verificato runtime DT: esiste /proc/device-tree/soc/qcom,ipa@03e00000/ipa_smmu_eth1 (non è netdev eth1).
+- Test modulo pcie_enabler_ipaV22: prima del fix, ipa_smmu_eth1 mostrava pmds/base/end corrotti (es. pmds=c1de0cb4 end=0x1fa) mentre ipa_smmu_eth era già corretto.
+- Dopo fix V22, ipa_smmu_eth1 viene riallineato a ipa_smmu_ap (pmds=ba0d53fc base=0x0 end=0x9fffffff).
+- Root cause residua probabile: crash in av8l_fast_map causato dal dominio ipa_smmu_eth1 corrotto/non riallineato (V16 fixava solo ipa_smmu_eth).
+[2026-04-15 00:06] Test completo V12+V22+stack llccpa_fix su Foxconn.
+- Sequenza load riuscita: RET_V12=0, RET_V22=0, RET_R8125=0, RET_IOSS=0, RET_R8125IOSS=0, RET_ETH0_UP=0.
+- Cattura live /proc/kmsg: V22 corregge sia ipa_smmu_eth sia ipa_smmu_eth1 (prima corruzione visibile, dopo allineamento a ipa_smmu_ap).
+- Durante la finestra catturata non compare Oops av8l_fast_map né trace ipa_eth_client_conn_pipes.
+- Tuttavia il modem ha comunque eseguito reboot successivo (ADB cade, uptime riparte) circa ~1 minuto dopo, con causa non ancora esplicita nei log persistiti.
+- Nuova situazione: crash immediato av8l_fast_map sembra mitigato; resta instabilità/reboot tardivo da isolare con tracing aggiuntivo (kmsg continuo + marker temporali ioss_ipa_register/perf/reg_intf).
+[2026-04-15 00:07] Test ipotesi skip_conn_pipes=1.
+- Sequenza con skip attivo completata: RET_V12=0, RET_V22=0, RET_R8125=0, RET_IOSS_SKIP=0, RET_R8125IOSS=0, RET_ETH0_UP=0.
+- Nonostante skip_conn_pipes=1, il modem riavvia comunque poco dopo (ADB assente per vari secondi, poi ritorno con nuovo transport_id e uptime reset).
+- Conclusione: il reboot NON dipende esclusivamente da ipa_eth_client_conn_pipes()/mapping descrittori DMA.
+- Nuovo perimetro bug: path successivo/parallelo (es. r8125_ioss runtime/open/event path o gestione refresh/recovery) ancora capace di innescare reboot anche con conn_pipes bypassata.
+[2026-04-15 00:08] Test hard bypass IPA register (skip_ipa_register=1).
+- Build nuovo stack con parametro skip_ipa_register disponibile.
+- Sequenza load riuscita (tutti RET=0) e i moduli restano vivi dopo boot successivo.
+- Ma il modem reboota comunque poco dopo il load (ADB transport_id cambia 9 -> 10).
+- Conclusione forte: il crash NON dipende dal ramo IPA register/conn_pipes.
+- Area crash residua più probabile: path r8125_ioss / ioss refresh-event-channel / lifecycle open-close (fuori IPA map).
+[2026-04-15 00:09] Matrice skip r8125_ioss completata (con log live).
+- Testati: skip_request_event=1, skip_enable_event=1, skip_enable_channel=1.
+- Esito: reboot sempre presente (transport_id incrementale 2->3->4->5).
+- Quindi il trigger NON è confinato a questi callback del glue.
+
+[2026-04-15 00:10] Bug operativo di test identificato e corretto.
+- Due moduli su /moduli erano troncati (r8125_stack_diaghooks 20KB, r8125_ioss_rebuilt_diaghooks 0B), generando "Invalid module format"/false negatives.
+- Corretto con ricopia+hash verify; successivamente test validi eseguiti da /data/local/tmp.
+
+[2026-04-15 00:11] Strumentazione estesa r8125_ioss (diag2).
+- Patch sorgente: aggiunti parametri skip_open_device e skip_request_channel in drivers/r8125_ioss/r8125_ioss.c.
+- Rebuild stack completato (artifact diag2); parametro confermato via modinfo.
+- Test: skip_open_device=1 e skip_request_channel=1 -> reboot comunque presente.
+- Evidenza: con skip_open_device compare log DIAG (hook realmente attivo), ma reboot resta.
+
+[2026-04-15 00:12] Isolamento causale ribaltato (muro serio).
+- Disabilitato temporaneamente udev rule 99-data-eth.rules: reboot resta invariato.
+- Test senza r8125_ioss (solo pcie_enabler_ipaV12 + r8125 + ioss skip_ipa_register): reboot ancora presente.
+- Test minimale senza IOSS e senza r8125_ioss (solo pcie_enabler_ipaV12 + r8125): reboot ancora presente.
+- Test controllo: pcie_enabler_ipaV12 da solo resta stabile.
+- Conclusione forte aggiornata: il reset non dipende più dal path IPA/ioss/r8125_ioss; trigger minimo osservato è combinazione PCIe bring-up V12 + driver r8125 (ETH path base), quindi problema primario ora è a livello PCIe<->r8125/IOMMU baseline prima dell'offload IPA.
+[2026-04-15 00:13] Confronto moduli utente '1-rel' vs stack attuale.
+- r8125_rebuilt_1-rel.ko è IDENTICO a r8125_rebuilt.ko (stesso hash sha256 e stesso srcversion FCA430DA2C9AB2DFB2BB560).
+- Quindi il delta di regressione non è nel driver r8125, ma nel pcie_enabler.
+
+[2026-04-15 00:14] Isolamento A/B confermato su target Foxconn.
+- CASE A: pcie_enabler_1-rel + r8125_rebuilt_1-rel => stabile (uptime cresce, nessun reboot nel window test).
+- CASE B: pcie_enabler_ipaV12 + stesso r8125_rebuilt_1-rel => reboot rapido (ADB cade, transport_id incrementa 13->14).
+- Quindi la regressione è introdotta da pcie_enabler_ipaV12 (non da r8125).
+
+[2026-04-15 00:15] Differenza funzionale chiave individuata.
+- pcie_enabler_1-rel (sorgente match: pcie_enabler.back) fa solo:
+  1) status='okay' su RC
+  2) of_platform_device_create del RC.
+- pcie_enabler_ipaV12 aggiunge invece:
+  1) override runtime di /soc/qcom,pcie@1c00000/iommu-map con RID 0x100 -> SID IPA ETH (0x5e3)
+  2) iniezione nodo dynamic /pcie0_rp/realtek,rtl8125@0,0 + channel-rx/channel-tx + proprietà ioss/ipa.
+- Punto di rottura osservato: il reboot compare già con V12 + r8125 (anche senza ioss/r8125_ioss), quindi il trigger è nel layer PCIe/DT runtime introdotto da V12.
+
+[2026-04-15 00:16] Sintomo kernel del reboot.
+- Nei log dopo scenario rotto compare subsys-restart con MPSS BEFORE_POWERUP/AFTER_POWERUP.
+- Questo indica crash lato modem subsystem (SSR), non semplice panic Linux locale.
+[2026-04-15 00:17] Avvio isolazione a step con nuovo modulo pcie_enabler_stepdiag.
+- Nuovo file: pcie_enabler_stepdiag.c con parametri runtime:
+  enable_status, enable_eth_node, enable_channels, enable_iommu_group_prop, enable_iommu_map_override.
+- Build completata: pcie_enabler_stepdiag.ko.
+
+[2026-04-15 00:18] Risultati step-by-step (con r8125_rebuilt_1-rel fisso).
+- S0 status-only: STABILE (nessun reboot nella finestra test).
+- S1 eth_node-only:
+  - no r8125: stabile.
+  - +r8125: stabile (retest robusto).
+- S2 eth_node + channels + iommu_group:
+  - no r8125: stabile.
+  - +r8125: stabile (clean retest con setenforce 0).
+- S3 iommu_map-only:
+  - no r8125: stabile.
+  - +r8125: in test atomico pulito stabile; in alcune run non atomiche reboot transitorio durante reconnect.
+- S4 full (eth_node + channels + iommu_group + iommu_map):
+  - no r8125: stabile.
+  - +r8125: comportamento flakey; osservati reboot immediati in alcune run (transport_id 21->22, 22->23) durante bring-up, ma run atomiche possono anche rimanere vive.
+
+[2026-04-15 00:19] Conclusione tecnica aggiornata (non deterministica ma coerente).
+- Non emerge un singolo flag che rompe sempre da solo.
+- La regressione è una INSTABILITA' DI INTERAZIONE quando il set completo stile V12 viene combinato con il bring-up r8125/udev (e bridge/userspace), con SSR modem osservato in più sessioni.
+- Evidenza forte storica resta A/B utente:
+  - pcie_enabler_1-rel + r8125_1-rel -> stabile
+  - pcie_enabler_ipaV12 + stesso r8125_1-rel -> reboot rapido.
+- Quindi lo step che “rompe” in pratica è il profilo FULL V12 (non i sotto-step singoli isolati), probabilmente per race/stato runtime nel DT patchato dinamicamente sotto pcie0_rp.
+
+[2026-04-15 00:20] Direzione patch consigliata.
+- Base stabile: mantenere comportamento 1-rel (solo RC enable + create).
+- Reintrodurre IPA binding in modo deferred/guardato:
+  1) iniettare nodo/canali solo dopo enumerazione RTL8125 stabile;
+  2) evitare override diretto di iommu-map del RC a caldo; preferire patch localizzata lato IPA node (es. pmds/fix domain) o approccio post-probe non distruttivo;
+  3) aggiungere check idempotenza + lock/sync contro udev/modprobe concorrenti.
+
+[2026-04-15 19:44] BREAKTHROUGH: causa crash identificata con stacktrace kernel.
+- Cattura live /proc/kmsg in test singolo ha mostrato OOPS ARM PREEMPT in fase di `rmmod r8125`:
+  - "Unable to handle kernel paging request at virtual address aaaaaaba"
+  - PC: rtl8125_fw_release_firmware+0x0/0x8 [r8125]
+  - LR: rtl8125_remove_one+0x16c/0x18c [r8125]
+  - Call chain: rtl8125_remove_one -> pci_device_remove -> ... -> sys_delete_module
+- Quindi una parte dei reboot osservati in diagnostica era artefatto del teardown ripetuto del driver (`rmmod r8125`) nei loop di test, non prova diretta del path di enable IPA.
+- Implicazione: i test affidabili per IPA/PCIE devono evitare unload di r8125 (load once per boot, monitor runtime).
+
+[2026-04-15 19:46] Verifica finale causa/repro e fix operativo.
+- Test pulito (reboot, poi solo load una volta):
+  - insmod pcie_enabler_ipaV12.ko -> RET_V12=0
+  - insmod r8125_rebuilt_1-rel.ko -> RET_R8125=0
+  - ip link set eth0 up -> RET_ETH0_UP=0
+  - monitor >90s: NESSUN reboot (transport_id stabile, uptime crescente continuo).
+- Quindi il reboot non è intrinseco al semplice bring-up RC+r8125; il trigger forte è il teardown `rmmod r8125` (bug remove path) usato nei loop di test.
+
+[2026-04-15 19:47] Patch applicate.
+1) pcie_enabler_ipaV12.c
+   - aggiunto parametro modulo `force_iommu_map_override` (default OFF);
+   - lasciato override RID->SID solo se esplicitamente richiesto, per evitare mismatch hardcoded su piattaforma Foxconn.
+2) run_stepdiag_case.sh / run_diag_case.sh / run_diag2_case.sh
+   - rimossa la riga `rmmod r8125` dai setup di test,
+   - per evitare OOPS in remove path (`rtl8125_fw_release_firmware`) e reboot artefatti.
+
+[2026-04-15 19:47] Stato attuale.
+- Crash root-cause isolata con stacktrace completo: unload r8125.
+- Flusso load-once stabile confermato.
+- Prossimo step IPA funzionale: validare binding IPA senza unload driver e con map SID coerente al DT reale (evitando override hardcoded salvo validazione esplicita).
+[2026-04-16 18:58] Nuova causa crash isolata con evidenza completa (step-by-step).
+- Base osservata in crash precedenti: Oops in av8l_fast_map durante ipa_eth_client_conn_pipes.
+- Log V22 conferma domini IPA ETH forzati a base/end 0x0..0x9fffffff.
+- Daddr RTL8125 per ring/buffer sono tipicamente 0xffxxxxxx (fuori range rispetto a 0x9fffffff).
+- Prima patch ioss_ipa: remap high IOVA -> PA (buffer), poi anche desc; risultato:
+  - niente Oops immediato,
+  - ma nuovo errore deterministico GSI: "bad params ring base not aligned ... align 0x8000" su RX event ring.
+- Causa precisa del nuovo fail: remappare descriptor transfer_ring_base a PA rompe allineamento richiesto da GSI (0x8000) e/o semantica IOVA attesa.
+
+[2026-04-16 18:59] Patch incrementali applicate in data-eth-src/drivers/ioss/ioss_ipa.c.
+1) Robustezza parser già presente (turno precedente): fallback canali DT.
+2) Fix high IOVA per buffer IPA con iova_ceiling + guard su PA nulla.
+3) Estensione al descriptor transfer_ring_base (temporanea).
+4) Guard overflow lista buffer:
+   - fail hard se idx >= data_buff_list_size
+   - log mismatch count e riallineo data_buff_list_size.
+5) Correzione strategia remap:
+   - NON più PA diretta come default,
+   - remap IOVA fuori range usando mask dell'IOVA originale (`iova & iova_ceiling`) per preservare layout/allineamento,
+   - fallback a PA solo se remap mask invalido.
+
+[2026-04-16 19:00] Evidenze dal test clean case_iova_fix3_clean_2026-04-16_18-55-28.
+- Sequenza load OK: RET_V12=0 RET_V22=0 RET_R8125=0 RET_IOSS=0 RET_R8125_IOSS=0 RET_ETH0_UP=0.
+- Log chiave:
+  - "Descriptor DMA IOVA 0xff930000 above ceiling ... using PA 0x849ba000" (prima della correzione mask)
+  - "gsi_validate_evt_ring_props ... ring base not aligned 0x849ba000 align 0x8000"
+  - "ipa_eth_setup_rtk_gsi_channel: fail to alloc RX event ring"
+  - "ipa3_eth_connect: fail to setup eth gsi rx channel"
+  - "ipa_eth_client_conn_pipes_internal: pipe connect fails"
+- Quindi: pipeline IPA raggiunta e fallita per vincolo GSI su base ring, non per panic kernel in quel run.
+
+[2026-04-16 19:01] Stato attuale / blocker operativo.
+- Dopo il test clean, target Foxconn è rimasto in stato ADB offline persistente (transport_id incrementale, poi offline fisso).
+- Non è stato possibile completare la controprova con l'ultima patch (remap via mask) perché il device non torna online automaticamente.
+- Richiesta operativa per riprendere: reboot/power-cycle del modem Foxconn e rerun test clean con i moduli appena rebuilt.
+[2026-04-16 19:15] Verifica post-riavvio manuale + patch remap mask.
+- Test: case_iova_fix4_mask_2026-04-16_19-12-00
+- Esito: reboot/transient disconnect ancora presente quando si arriva a `Calling ipa_eth_client_conn_pipes`.
+- Evidenza nuova: remap IOVA ora è attivo e coerente (es. desc 0xff930000 -> 0x9f930000; buff 0xff200000 -> 0x9f200000), quindi non stiamo più passando IOVA fuori range 0x9fffffff.
+- In questo run non compare stacktrace panic nel kmsg catturato (probabile reset/subsys restart rapido durante conn_pipes).
+
+[2026-04-16 19:16] Isolamento definitivo con skip_conn_pipes.
+- Test: case_iova_fix4_skipconn_2026-04-16_19-13-52
+- Con `insmod ioss_rebuilt.ko skip_conn_pipes=1` il modem resta stabile tutta la finestra (nessun reboot, uptime continua).
+- Log chiave:
+  - `DIAG: skip_conn_pipes=1, bypassing ipa_eth_client_conn_pipes`
+  - `Failed to register with IPA` (atteso con skip)
+  - sistema resta vivo e rete continua.
+- Conclusione forte aggiornata:
+  - il trigger residuo è confinato dentro `ipa_eth_client_conn_pipes` / ipa_eth_connect (non nel pre-setup ioss/r8125_ioss),
+  - la patch remap mask ha eliminato mismatch range IOVA, ma resta incompatibilità nel connect path IPA/GSI specifico di questo target.
+[2026-04-16 19:30] Step 1 implementato: preflight diagnostica + hardening in ioss_ipa.c.
+- Nuovi parametri modulo ioss:
+  - preflight_strict (default 1)
+  - preflight_only (default 0)
+  - trb_align (default 0x8000)
+  - buff_iova_align (default 0x800)
+- Nuovi controlli pre-connect:
+  - validità transfer ring/buffer list
+  - allineamenti
+  - range iova <= iova_ceiling
+  - overlap transfer-ring vs buffer ranges
+  - conteggio TX/RX pipe
+- Behavior:
+  - preflight_strict=1 => abort prima della connect in caso di errore hard
+  - preflight_only=1 => stop diagnostico prima di ipa_eth_client_conn_pipes
+
+[2026-04-16 19:31] Risultato test preflight_only clean.
+- File: case_preflight_only_clean_2026-04-16_19-25-38.kmsg
+- Esito: stabile, nessun reboot.
+- Evidenze preflight:
+  - TX: transfer ring size 32736 non power-of-two (warning)
+  - RX: OK
+  - pipe count tx=1 rx=1 rc=0
+  - DIAG preflight_only stop prima di connect (atteso)
+
+[2026-04-16 19:32] Risultato test connect con preflight attiva (preflight_only=0).
+- File: case_preflight_connect_2026-04-16_19-27-14.kmsg
+- Evidenze chiave:
+  - preflight eseguita e rc=0 (con warning TX non power-of-two)
+  - chiamate completate:
+    - ipa_eth_client_conn_pipes done
+    - ioss_ipa_vote_bw done
+    - ipa_eth_client_reg_intf done
+  - mapping eventi RX/TX completato.
+- Nota runtime:
+  - durante monitor USB c'è stato drop/ri-enumerazione ADB (transport_id 6->7) nella finestra successiva;
+  - dal kmsg catturato non emerge errore IPA/GSI/panic nel punto di connect.
+
+[2026-04-16 19:33] Conclusione tecnica aggiornata.
+- Step 1 ha centrato obiettivo diagnostico: ora abbiamo visibilità precisa e fail-safe pre-connect.
+- Non c'è più evidenza di crash immediato nel path `ipa_eth_client_conn_pipes` in questa run; la connect è completata.
+- Resta instabilità runtime successiva da correlare (possibile SSR non direttamente causato da connect call).
+- Punto da investigare in Step 2: anomalia TX ring size=32736 (1023*32) vs RX=32768, che resta il mismatch strutturale principale emerso dalla preflight.
+
+[2026-04-16 20:xx] Root cause analysis: "TX=1023" origin trace
+- r8125 upstream-like driver defaults to 1024 descriptors for both core rings:
+  - data-eth-src/drivers/r8125/src/r8125.h: NUM_TX_DESC=1024, NUM_RX_DESC=1024
+  - data-eth-src/drivers/r8125/src/r8125_n.c: rtl8125_set_ring_size(..., NUM_RX_DESC, NUM_TX_DESC)
+- No 1023 ring-size constant appears in r8125/r8125_ioss path; 1023 appears in IOSS DT/fallback layer:
+  - data-eth-src/drivers/ioss/ioss_of.c: IOSS_R8125_RX_RING_SIZE=1023, TX_RING_SIZE=1024
+  - pcie_enabler variants inject qcom,ring-size with RX=1023 and TX=1024.
+- IPA dir numeric mapping is: TX=0, RX=1 (include/linux/ipa_eth.h).
+- In preflight logs, the non-power-of-two ring (32736 = 1023*32) is on dir=1, i.e. RX, not TX.
+- Therefore observed "TX=1023" is a direction-label interpretation issue; actual configured 1023 ring in this stack is RX-side policy from IOSS/DT injection, not natural r8125 upstream behavior.
+
+[2026-04-16 19:51] Clean reboot-only validation (no rmmod policy)
+- User constraint applied: no rmmod-based churn for test loops; use reboot-clean sequencing only.
+- blocker on rebuilt pcie_enabler_1-rel.ko:
+  - fails to load with Unknown symbol of_update_property/of_add_property on target kernel.
+  - kallsyms param path also blocked in userland because /proc/kallsyms is masked (kallsyms_lookup_name addr reads as 0x00000000).
+- temporary diagnostic injector used: pcie_enabler_ipaV20.ko (known-loadable in this environment), which configures channel ring-size to 1024 and page-aligned buffers.
+
+Run A (preflight_only, clean):
+- case: diag_runs/case_v20_rx1024_preflight_only_clean_2026-04-16_19-47-29.{log,kmsg}
+- Preflight summaries:
+  - dir=1 trsz=32768 buffs=1024 bsz=4096 warns=0
+  - dir=0 trsz=32768 buffs=1024 bsz=4096 warns=0
+  - pipe count tx=1 rx=1 rc=0
+- No non-power-of-two warning (old 32736 warning gone).
+
+Run B (connect, clean reboot baseline):
+- case: diag_runs/case_v20_rx1024_connect_cleanboot_2026-04-16_19-50-09.{log,kmsg}
+- Preflight summaries both pipes clean (32768/1024, warns=0).
+- ipa connect path completed:
+  - Calling ipa_eth_client_conn_pipes
+  - ipa_eth_client_conn_pipes done
+- Device remained up during monitor window (uptime monotonic; no reboot in loop).
+
+Conclusion from this phase:
+- Eliminating 1023-ring geometry removes the preflight ring warning and allows stable connect in this clean run.
+- immediate next engineering task is to port the same geometry (and only that delta first) into the user-preferred pcie_enabler_1-rel path without using non-exported OF symbols.
+
+[2026-04-16 19:5x] Binary fingerprint check for pcie_enabler_1-rel.ko origin
+- Method: full SHA256 + size comparison across all pcie_enabler*.ko artifacts.
+- Result:
+  - pcie_enabler_1-rel.ko SHA256 == pcie_enabler.ko SHA256
+  - both size 14072 bytes
+- No ipaV* module hash matches pcie_enabler_1-rel.ko.
+- Implication: current local pcie_enabler_1-rel.ko is byte-identical to current pcie_enabler.ko build artifact, not to any ipaV6/ipaV* binary.
+
+[2026-04-16 20:05] v2 module for clean testing
+- Added /home/manu/Scrivania/linaro 5.4/pcie_enabler_v2.c (derived from loadable V20 path) with 1024 ring geometry in channel nodes.
+- Added obj target in /home/manu/Scrivania/linaro 5.4/Makefile: obj-m += pcie_enabler_v2.o
+- Built /home/manu/Scrivania/linaro 5.4/pcie_enabler_v2.ko successfully.
+
+Reboot-clean tests (no rmmod):
+- v2 + diaghooks stack loads (RET_V2=0, RET_IOSS=0, RET_R8125_IOSS=0), then crash occurs at connect:
+  - Calling ipa_eth_client_conn_pipes
+  - Oops in av8l_fast_map -> arm_smmu_map -> ipa3_smmu_map_eth_pipes -> ipa_eth_client_conn_pipes
+  - kernel panic + reboot follows.
+- v2 + ioss_rebuilt path currently fails to insert ioss_rebuilt on target (insmod reports Invalid parameters), so high-IOVA remap path not active in this v2 test.
+
+Current conclusion:
+- v2 enabler itself loads and injects DT correctly.
+- Reboot trigger in successful-load scenario is still inside IPA SMMU map path during conn_pipes (not in enabler init).
+
+[2026-04-16 20:15] Stop-on-problem run (as requested)
+- Case: diag_runs/case_stop_on_problem_2026-04-16_20-14-03.{log,kmsg}
+- Sequence (clean reboot): pcie_enabler_ipaV20 + r8125_rebuilt_1-rel + ioss_rebuilt(remap/preflight strict) + r8125_ioss_rebuilt.
+- All inserts succeeded (RET_* = 0).
+- IPA path milestones reached:
+  - Preflight clean: trsz=32768, buffs=1024, warns=0 (both dirs)
+  - Calling ipa_eth_client_conn_pipes
+  - ipa_eth_client_conn_pipes done
+  - ioss_ipa_vote_bw done
+  - ipa_eth_client_reg_intf done
+  - event mapping done (RX/TX)
+- Failure manifestation:
+  - device uptime goes from valid to ERR right after these milestones
+  - ADB disconnects, then device re-enumerates (transport_id changes), uptime restarts from ~18s.
+- Important: in this run no kernel Oops/panic stacktrace was captured in kmsg before reset; last captured lines are successful post-connect markers. This indicates a hard reset/SSR-like failure after connect+reg_intf, not an in-band Linux panic in the captured window.
+[2026-04-17 19:48] Confronto live su modem Quectel (baseline funzionante IPA).
+- Device online: 99748d0.
+- DT channel nodes reali:
+  - /proc/device-tree/soc/r8125_rx@eth0: ring-size=0x3ff (1023), buff-size=0x800 (2048), dir-rx
+  - /proc/device-tree/soc/r8125_tx@eth0: ring-size=0x400 (1024), buff-size=0x800 (2048), dir-tx
+- DT eth node: /proc/device-tree/soc/qcom,pcie@1c00000/pcie0_rp/realtek,rtl8125@pcie0_rp
+  con qcom,ioss_channels phandle [0xaf, 0xb0].
+- dmesg: path IPA completo senza errori immediati (connessione/event map completate).
+
+[2026-04-17 19:52] Verifica runtime debugfs Quectel.
+- /sys/kernel/debug/ioss/devices/eth0/rx-1/status => size: 1023
+- /sys/kernel/debug/ioss/devices/eth0/tx-1/status => size: 1024
+- Quindi la geometria funzionante osservata su Quectel è RX=1023 / TX=1024 (confermato runtime).
+
+[2026-04-17 19:54] Nuova causa candidata (Foxconn crash path).
+- Nei log Foxconn precedenti compare preflight warning su TX non power-of-two (transfer ring 32736 = 1023*32).
+- In ioss_net.c il canale TX può essere ridimensionato dinamicamente dal path LLCC:
+  ioss_net_select_llcc_config() -> ring_size = mem_size / buff_size.
+- Se LLCC restituisce memoria leggermente inferiore, TX può diventare 1023, alterando i descriptor IPA/GSI nel connect path.
+
+[2026-04-17 19:56] Patch proposta/implementata (hardening + diagnostica causale).
+- File modificato: data-eth-src/drivers/ioss/ioss_net.c
+- Modifica:
+  1) in ioss_net_select_llcc_config(), se ring_size non è power-of-two -> return -EINVAL con log esplicito;
+  2) in ioss_net_select_channel_config(), se LLCC fail/non-pow2 -> fallback a default TX config (DDR).
+- Obiettivo: evitare geometrie TX non deterministiche (es. 1023) nel path IPA/GSI su Foxconn.
+
+[2026-04-17 19:56] Build patch completata.
+- Artefatti generati:
+  - ioss_rebuilt_pow2guard.ko
+  - r8125_stack_pow2guard.ko
+  - r8125_ioss_rebuilt_pow2guard.ko
+- Build base: kernel 5.4.210-perf (tree 04700), compile OK.
+[2026-04-17 20:02] Test Foxconn con patch pow2guard (LLCC non-pow2 guard) - full connect.
+- Modem: Foxconn (adb d95ed2c3).
+- Sequenza load (no rmmod) riuscita: RET_V12=0, RET_V22=0, RET_R8125=0, RET_IOSS=0, RET_R8125_IOSS=0, RET_ETH0_UP=0.
+- Log chiave durante ioss_ipa_register (cattura live):
+  - channel fallback attivo: channel[0]/[1] phandle missing -> child fallback
+  - Preflight: dir=1 transfer ring size 32736 non power-of-two; buffs=1023
+  - Preflight: dir=0 transfer ring size 32768; buffs=1024
+  - ipa_eth_client_conn_pipes done
+  - ipa_eth_client_reg_intf done
+  - Mapped RX-1/TX-1 event done
+- Dopo la connect, in finestra successiva il target ha perso device ADB e poi è tornato con boot pulito (moduli non presenti, uptime ripartito): reboot ancora presente.
+
+[2026-04-17 20:03] Controprova confinamento crash con preflight_only=1.
+- Re-test stesso stack ma: insmod ioss_rebuilt_pow2guard.ko preflight_only=1
+- Sequenza load OK + eth0 up OK.
+- Log: "DIAG: preflight_only=1, stopping before connect" + "Failed to register with IPA" (atteso).
+- Monitor ~80s: ADB stabile, nessuna ri-enumerazione, moduli ancora live.
+- Conclusione aggiornata:
+  - la patch pow2guard non elimina il reboot in full connect,
+  - il reboot resta confinato al path di connect IPA reale (quando conn_pipes viene eseguita),
+  - bypass connect (preflight_only) mantiene stabilità.
+[2026-04-17 20:25] Forensic run step-by-step (Foxconn) - esito.
+- Sessione: diag_runs/case_forensic_step_2026-04-17_20-21-45
+- Reboot pulito + push moduli + trigger full connect.
+- Marker dmesg confermati:
+  - Preflight dir=1 trsz=32736 (non power-of-two), buffs=1023
+  - ipa_eth_client_conn_pipes done
+  - ipa_eth_client_reg_intf done
+  - Mapped RX/TX event done
+- Monitor ADB ~100s: nessuna disconnessione (transport_id costante), uptime finale 4 min.
+- In questa run NON si è riprodotto il reboot.
+- Tentativo collector IPC live con log_cont via adb non riuscito (file 0B): stream behavior/buffering non affidabile in questo setup.
+- Nota: crash resta non deterministico; per root-cause definitiva serve cattura su evento che riproduce il reset.
+[2026-04-17 20:28] Correzione validità test (feedback utente corretto).
+- Check live Foxconn: ETH0_MISSING, PCI_NET_NONE, PCI_DRV_NONE, STACK_NOT_LOADED.
+- Conclusione: test crash IPA non valido senza interfaccia Ethernet fisicamente presente/bindata.
+- Azione: riprendere solo con eth0 reale presente su 0000:01:00.0 e link operativo.

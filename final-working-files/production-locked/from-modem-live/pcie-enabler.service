@@ -1,0 +1,19 @@
+[Unit]
+Description=Load NON-ES PCIe runtime enabler and IPA ETH modules early
+DefaultDependencies=no
+After=local-fs.target disable-selinux.service
+Before=qcmap-radio-on.service QCMAP_ConnectionManagerd.service ipacm.service
+ConditionPathExists=/moduli/pcie_enabler_non_es_v1.ko
+ConditionPathExists=/moduli/rmnet_eth.ko
+ConditionPathExists=/moduli/r8125_rebuilt.ko
+ConditionPathExists=/moduli/ioss_rebuilt.ko
+ConditionPathExists=/moduli/r8125_ioss_rebuilt.ko
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/load-pcie-enabler.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+WantedBy=sockets.target

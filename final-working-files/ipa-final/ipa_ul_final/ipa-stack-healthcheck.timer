@@ -1,0 +1,11 @@
+[Unit]
+Description=Run QCMAP IPA stack healthcheck periodically
+
+[Timer]
+OnBootSec=90s
+OnUnitActiveSec=60s
+AccuracySec=10s
+Unit=ipa-stack-healthcheck.service
+
+[Install]
+WantedBy=timers.target

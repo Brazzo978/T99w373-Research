@@ -1,0 +1,18 @@
+[Unit]
+Description=Load IPA ETH kernel modules in guided order (early)
+DefaultDependencies=no
+After=local-fs.target disable-selinux.service
+Before=qcmap-radio-on.service QCMAP_ConnectionManagerd.service
+ConditionPathExists=/moduli/rmnet_eth.ko
+ConditionPathExists=/moduli/r8125_rebuilt.ko
+ConditionPathExists=/moduli/ioss_rebuilt.ko
+ConditionPathExists=/moduli/r8125_ioss_rebuilt.ko
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/load-pcie-enabler.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+WantedBy=sockets.target

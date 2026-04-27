@@ -1,0 +1,86 @@
+#include <linux/module.h>
+#include <linux/kernel.h>
+#include <linux/init.h>
+#include <linux/of.h>
+#include <linux/of_platform.h>
+#include <linux/slab.h>
+
+// Stringhe compatibili tipiche per i controller PCIe Root Complex Qualcomm SDX
+#define PCIE_COMPAT_1 "qcom,pcie-sdx65"
+#define PCIE_COMPAT_2 "qcom,pcie-sdx62"
+#define PCIE_COMPAT_3 "snps,dw-pcie"
+
+static struct device_node *pcie_node = NULL;
+static struct platform_device *pcie_pdev = NULL;
+
+static int __init pcie_enabler_init(void)
+{
+    struct property *new_status;
+    int ret;
+
+    printk(KERN_INFO "[PCIe Hacker] Modulo avviato. Cerco il nodo Root Complex...\n");
+
+    // 1. Cerca il nodo nell'albero in RAM
+    pcie_node = of_find_compatible_node(NULL, NULL, PCIE_COMPAT_1);
+    if (!pcie_node) pcie_node = of_find_compatible_node(NULL, NULL, PCIE_COMPAT_2);
+    if (!pcie_node) pcie_node = of_find_compatible_node(NULL, NULL, PCIE_COMPAT_3);
+
+    if (!pcie_node) {
+        printk(KERN_ERR "[PCIe Hacker] ERRORE: Nodo PCIe non trovato nel Device Tree attivo!\n");
+        return -ENODEV;
+    }
+
+    printk(KERN_INFO "[PCIe Hacker] Nodo trovato: %pOF\n", pcie_node);
+
+    // 2. Alloca e prepara la nuova proprietà status = "okay"
+    new_status = kzalloc(sizeof(*new_status), GFP_KERNEL);
+    if (!new_status) return -ENOMEM;
+
+    new_status->name = kstrdup("status", GFP_KERNEL);
+    new_status->value = kstrdup("okay", GFP_KERNEL);
+    new_status->length = 5; // "okay" + \0
+
+    // 3. Inietta la modifica nell'albero vivo
+    ret = of_update_property(pcie_node, new_status);
+    if (ret) {
+        printk(KERN_ERR "[PCIe Hacker] ERRORE: Impossibile sovrascrivere la proprieta' status (%d)\n", ret);
+        kfree(new_status->value);
+        kfree(new_status->name);
+        kfree(new_status);
+        of_node_put(pcie_node);
+        return ret;
+    }
+
+    printk(KERN_INFO "[PCIe Hacker] Proprieta' 'status' forzata a 'okay'.\n");
+
+    // 4. Forza la creazione del dispositivo fisico per svegliare il driver pcie-qcom
+    pcie_pdev = of_platform_device_create(pcie_node, NULL, NULL);
+    if (!pcie_pdev) {
+        printk(KERN_ERR "[PCIe Hacker] ERRORE: of_platform_device_create fallito. Il driver non è partito.\n");
+        of_node_put(pcie_node);
+        return -ENODEV;
+    }
+
+    printk(KERN_INFO "[PCIe Hacker] SUCCESSO! Platform device creato. Il PCIe Root Complex e' vivo.\n");
+    return 0; 
+}
+
+static void __exit pcie_enabler_exit(void)
+{
+    printk(KERN_INFO "[PCIe Hacker] Scaricamento modulo...\n");
+    
+    // De-inizializza il dispositivo se il modulo viene rimosso
+    if (pcie_pdev) {
+        of_device_unregister(pcie_pdev);
+    }
+    if (pcie_node) {
+        of_node_put(pcie_node);
+    }
+}
+
+module_init(pcie_enabler_init);
+module_exit(pcie_enabler_exit);
+
+MODULE_LICENSE("GPL"); // Necessario per usare of_update_property che è EXPORT_SYMBOL_GPL
+MODULE_AUTHOR("LTE");
+MODULE_DESCRIPTION("Abilita il Root Complex PCIe forzando il Device Tree in RAM");
