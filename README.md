@@ -1,7 +1,7 @@
-# T99W373 QCMAP modem bundle
+# T99W373 Pcie-RC modem bundle
 
 This repository publishes the first tested self-installing bundle for the Foxconn
-T99W373 modem in locked / production / NON-ES mode.
+T99W373 modem.
 
 The release artifact is a single tar archive:
 
@@ -9,23 +9,17 @@ The release artifact is a single tar archive:
 qcmap-modem-bundle-v8-NON-ES-rx1024.tar
 ```
 
-It is meant to be copied to the modem with ADB and installed from the modem shell.
-The installer is permanent: it writes services, modules, QCMAP configuration,
-the modem WebUI and runtime helpers to the modem filesystem, then reboots.
 
 ## Supported target
 
 | Item | Status |
 |---|---|
 | Modem | Foxconn T99W373 / SDX62 |
-| Firmware kernel | `5.4.210-perf` ARMv7 |
-| Device family | Locked / production / NON-ES |
+| Firmware |Tricky part|
+|kernel | `5.4.210-perf` ARMv7 |
 | Ethernet controller | Realtek RTL8125 |
-| Bundle version | `v8 NON-ES RX1024` |
 | WebUI version | `Simple T99373-1.0.2B` |
-| LAN default | `192.168.225.1/24` |
 
-This release does not require a custom `boot.img`.
 
 ## Install
 
@@ -48,7 +42,7 @@ Do you want to install the SSH server? [Y/n]
 Do you want to install btop? [Y/n]
 ```
 
-For non-interactive installs, pass the choices through the environment:
+For non-interactive installs, you can pass the choices through the environment:
 
 ```sh
 INSTALL_SSH_SERVER=1 INSTALL_BTOP=1 ROOT_PASSWORD=123 sh ./install-full-stack-on-modem.sh
@@ -56,7 +50,7 @@ INSTALL_SSH_SERVER=1 INSTALL_BTOP=1 ROOT_PASSWORD=123 sh ./install-full-stack-on
 
 Use `0` instead of `1` to skip one of the optional components.
 
-The modem reboots automatically when the installer completes.
+The modem reboots automatically when the installer completes, i reccommend to use interactive install , installation can take VERY long time , ideally should be done before 10min.
 
 ## After install
 
@@ -68,15 +62,10 @@ Default access:
 | SSH, if enabled | `root@192.168.225.1` |
 | Default root password | `123`, unless changed with `ROOT_PASSWORD` |
 
-Useful validation commands:
 
-```sh
-adb shell 'systemctl is-active qcmap-radio-on qcmap_httpd ipacm ipa-stack-healthcheck.timer'
-adb shell '/usr/bin/ipa-ul-final-status.sh'
-adb shell 'ip -4 route; ip addr show bridge0; ip addr show rmnet_data0'
 ```
 
-## What the bundle installs
+## What doesthe bundle installs
 
 - QCMAP runtime configured for WAN over RMNET and LAN on `bridge0`.
 - LAN defaults to `192.168.225.1/24` with DHCP and NAT.
@@ -95,15 +84,11 @@ adb shell 'ip -4 route; ip addr show bridge0; ip addr show rmnet_data0'
 - Automatic reboot scheduler.
 - Connection watchdog with long boot grace for slow T99W373 WAN startup.
 - Tailscale WebUI helper.
-  The Tailscale binary is not bundled; the helper downloads the current build
-  when the modem is online. Startup waits for RMNET WAN and a valid clock before
-  launching `tailscaled`, so it does not break modem navigation during boot.
-- Optional Dropbear SSH server.
-- Optional `btop`.
-- Persistent installer logging and heartbeat output so long install steps are
-  visible instead of looking frozen.
+- Optional Dropbear SSH server(PLEASE INSTALL IT).
+- Optional `btop`(could not find any htop build working).
 
-The bundle does not set the APN. Keep the modem APN configured separately.
+
+The bundle does not set the APN. Please if not automatically inserted by the mbn config put it yourself, even if the gui isnt responsive push it anyway.
 
 ## Research documentation
 
