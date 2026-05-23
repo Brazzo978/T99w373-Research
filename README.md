@@ -186,8 +186,19 @@ Below are a few pictures of the T99W373 running with this bundle.
 
 ![T99W373 SSH runtime status](Docs/Images/SSH.jpg)
 
-## 📚 Research documentation
+### Example real-world throughput capability
+
+![T99W373 real-world throughput test](Docs/Images/speedtest.jpg)
+
+Verified Ookla result: [View result](https://www.speedtest.net/result/d/3fa18052-9f86-480e-8abf-42a53b51bba0)
+
+> This result is provided only to show that the PCIe-RC + RTL8125 + QCMAP/IPA stack
+> can sustain real traffic through the modem. It is not a performance guarantee.
+> Actual throughput depends on network conditions, carrier configuration, SIM plan,
+> APN, bands, CA/NR availability, signal quality, cell load, firmware and antenna setup.
 ---
+
+## 📚 Research documentation
 
 The long technical history, PCIe/IPA bring-up notes, module lineage and intermediate experiments are kept in:
 
