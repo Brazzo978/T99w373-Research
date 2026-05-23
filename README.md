@@ -1,7 +1,8 @@
-# T99W373 PCIe-RC Modem Bundle
+# T99W373 PCIe-RC Modem Bundle 🚀
 
 This repository publishes the first semi-stable self-installing bundle for the Foxconn T99W373 modem.
 
+The release artifact is a single tar archive:
 
 ```text
 qcmap-modem-bundle-v8-NON-ES-rx1024.tar
@@ -9,19 +10,19 @@ qcmap-modem-bundle-v8-NON-ES-rx1024.tar
 
 ---
 
-## Supported target
+## 🎯 Supported target
 
-| Item                | Status                                 |
-| ------------------- | -------------------------------------- |
-| Modem               | Foxconn T99W373 / SDX62                |
-| Firmware            | See firmware compatibility notes below |
-| Kernel              | `5.4.210-perf` ARMv7                   |
-| Ethernet controller | Realtek RTL8125                        |
-| WebUI version       | [`Simple T99373-1.0.2B`](https://github.com/Brazzo978/T99W175-simpleadmin/tree/T99W373)                 |
+| Item                | Status                                                                                  |
+| ------------------- | --------------------------------------------------------------------------------------- |
+| Modem               | Foxconn T99W373 / SDX62                                                                 |
+| Firmware            | See firmware compatibility notes below                                                  |
+| Kernel              | `5.4.210-perf` ARMv7                                                                    |
+| Ethernet controller | Realtek RTL8125                                                                         |
+| WebUI version       | [`Simple T99373-1.0.2B`](https://github.com/Brazzo978/T99W175-simpleadmin/tree/T99W373) |
 
 ---
 
-## Firmware compatibility and risk warning
+## ⚠️ Firmware compatibility and risk warning
 
 The exact full firmware compatibility matrix for the T99W373 is not known yet.
 
@@ -41,7 +42,7 @@ Use this bundle only if you understand the risk and you are prepared to recover 
 
 ---
 
-## Pre-install checklist
+## ✅ Pre-install checklist
 
 Before using this bundle, make sure the modem satisfies the following requirements.
 
@@ -99,7 +100,7 @@ Do not continue if the modem does not respond to AT commands or if `ATI` does no
 
 ---
 
-## Install
+## 🛠 Install
 
 Download the release asset from GitHub, then push it to the modem:
 
@@ -134,7 +135,7 @@ Interactive installation is recommended. Installation can take a very long time;
 
 ---
 
-## After install
+## 🌐 After install
 
 Default access:
 
@@ -146,7 +147,7 @@ Default access:
 
 ---
 
-## What the bundle installs
+## 📦 What the bundle installs
 
 * QCMAP runtime configured for WAN over RMNET and LAN on `bridge0`.
 * LAN defaults to `192.168.225.1/24` with DHCP and NAT.
@@ -159,14 +160,28 @@ Default access:
 * Automatic reboot scheduler.
 * Connection watchdog with long boot grace for slow T99W373 WAN startup.
 * Tailscale WebUI helper.
-* Optional Dropbear SSH server. Installing SSH is strongly recommended(PLEASE DO INSTALL IT).
+* Optional Dropbear SSH server. Installing SSH is strongly recommended. Please do install it.
 * Optional `btop`. No working `htop` build was available during testing.
 
 The bundle does not set the APN. If the APN is not automatically inserted by the MBN configuration, please set it manually. Even if the GUI does not look responsive, push the APN setting anyway.
 
 ---
 
-## Research documentation
+## 📸 Photos / Working setup
+
+Below are a few pictures of the T99W373 running with this bundle.
+
+### Modem installed and running
+
+WIP
+
+### WebUI after installation
+
+WIP
+
+---
+
+## 📚 Research documentation
 
 The long technical history, PCIe/IPA bring-up notes, module lineage and intermediate experiments are kept in:
 
@@ -177,6 +192,16 @@ The long technical history, PCIe/IPA bring-up notes, module lineage and intermed
 * [`final-working-files/source-build-context/README.md`](final-working-files/source-build-context/README.md)
 
 Start from the release bundle if you want to install the working setup. Read the research notes if you want to understand how the PCIe, Realtek, QCMAP and IPA pieces were discovered.
+
+---
+
+## 💬 Questions, Support & Requests
+
+For any questions, feature requests or support, feel free to reach out on Telegram:
+
+👉 [Telegram Group](https://t.me/ltesperimentazioni)
+
+---
 
 ## License
 
