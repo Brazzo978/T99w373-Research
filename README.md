@@ -166,22 +166,28 @@ Default access:
 The bundle does not set the APN. If the APN is not automatically inserted by the MBN configuration, please set it manually. Even if the GUI does not look responsive, push the APN setting anyway.
 
 ---
-
 ## 📸 Photos / Working setup
 
 Below are a few pictures of the T99W373 running with this bundle.
 
 ### Modem installed and running
 
-WIP
+![T99W373 modem running with PCIe Ethernet](Docs/Images/modem.jpg)
 
-### WebUI after installation
+### WebUI dashboard
 
-WIP
+![T99W373 SimpleAdmin dashboard](Docs/Images/pagina.jpg)
 
----
+### WebUI device information
+
+![T99W373 WebUI device information](Docs/Images/info.jpg)
+
+### SSH access and runtime status
+
+![T99W373 SSH runtime status](Docs/Images/SSH.jpg)
 
 ## 📚 Research documentation
+---
 
 The long technical history, PCIe/IPA bring-up notes, module lineage and intermediate experiments are kept in:
 
