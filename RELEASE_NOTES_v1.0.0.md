@@ -1,7 +1,16 @@
-# T99W373 QCMAP bundle v1.0.0
+# T99W373 QCMAP bundle v1.0.0 - superseded
 
-Superseded by v1.0.1 / bundle v9. Use v1.0.1 for new installs because it fixes
-rootfs growth from repeated iptables backup snapshots.
+> [!WARNING]
+> **Urgent upgrade recommended:** v1.0.0 / bundle v8 can fill the modem root
+> filesystem over time because repeated IPA dedupe snapshots are written under
+> `/root/ipa_stabilize_backups`.
+>
+> When rootfs reaches 100%, QCMAP runtime XML files may be truncated. The modem
+> can still show PCIe and the WebUI as active, but WAN routing may fail and
+> services such as `QCMAP_ConnectionManagerd` or `netmgrd` may crash.
+>
+> Existing v8 users should upgrade to v1.0.1 / bundle v9 as soon as possible:
+> https://github.com/Brazzo978/T99w373-Research/releases/tag/v1.0.1
 
 First public release of the self-installing T99W373 locked / production / NON-ES
 bundle.
