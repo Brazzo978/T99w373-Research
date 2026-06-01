@@ -1,5 +1,8 @@
 # T99W373 QCMAP bundle v1.0.0
 
+Superseded by v1.0.1 / bundle v9. Use v1.0.1 for new installs because it fixes
+rootfs growth from repeated iptables backup snapshots.
+
 First public release of the self-installing T99W373 locked / production / NON-ES
 bundle.
 

@@ -5,7 +5,7 @@ This repository publishes the first semi-stable self-installing bundle for the F
 The release artifact is a single tar archive:
 
 ```text
-qcmap-modem-bundle-v8-NON-ES-rx1024.tar
+qcmap-modem-bundle-v9-NON-ES-rx1024.tar
 ```
 
 ---
@@ -17,8 +17,11 @@ qcmap-modem-bundle-v8-NON-ES-rx1024.tar
 | Modem               | Foxconn T99W373 / SDX62                                                                 |
 | Firmware            | See firmware compatibility notes below                                                  |
 | Kernel              | `5.4.210-perf` ARMv7                                                                    |
+| Device family       | Locked / production / NON-ES                                                           |
 | Ethernet controller | Realtek RTL8125                                                                         |
+| Bundle version      | `v9 NON-ES RX1024`                                                                      |
 | WebUI version       | [`Simple T99373-1.0.2B`](https://github.com/Brazzo978/T99W175-simpleadmin/tree/T99W373) |
+| LAN default         | `192.168.225.1/24`                                                                      |
 
 ---
 
@@ -105,13 +108,13 @@ Do not continue if the modem does not respond to AT commands or if `ATI` does no
 Download the release asset from GitHub, then push it to the modem:
 
 ```sh
-adb push qcmap-modem-bundle-v8-NON-ES-rx1024.tar /foxusr/qcmap-modem-bundle-v8.tar
+adb push qcmap-modem-bundle-v9-NON-ES-rx1024.tar /foxusr/qcmap-modem-bundle-v9.tar
 ```
 
 Run the installer:
 
 ```sh
-adb shell 'rm -rf /foxusr/qcmap-install && mkdir -p /foxusr/qcmap-install && tar -C /foxusr/qcmap-install -xf /foxusr/qcmap-modem-bundle-v8.tar && cd /foxusr/qcmap-install/qcmap-modem-bundle-v8-NON-ES-rx1024 && ROOT_PASSWORD=123 ENABLE_WEB_CLIENT=1 sh ./install-full-stack-on-modem.sh'
+adb shell 'rm -rf /foxusr/qcmap-install && mkdir -p /foxusr/qcmap-install && tar -C /foxusr/qcmap-install -xf /foxusr/qcmap-modem-bundle-v9.tar && cd /foxusr/qcmap-install/qcmap-modem-bundle-v9-NON-ES-rx1024 && ROOT_PASSWORD=123 ENABLE_WEB_CLIENT=1 sh ./install-full-stack-on-modem.sh'
 ```
 
 During an interactive install, the script asks:
@@ -160,6 +163,11 @@ Default access:
 * Automatic reboot scheduler.
 * Connection watchdog with long boot grace for slow T99W373 WAN startup.
 * Tailscale WebUI helper.
+* v9 small-filesystem cleanup:
+  * dedupe backups are volatile and capped in `/tmp`;
+  * old v8 `/root/ipa_stabilize_backups` residue is removed;
+  * stale install staging folders are cleaned when they are not the current payload;
+  * old `/data/coredump/core.*` files are removed by default.
 * Optional Dropbear SSH server. Installing SSH is strongly recommended. Please do install it.
 * Optional `btop`. No working `htop` build was available during testing.
 
