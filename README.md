@@ -11,7 +11,7 @@ qcmap-modem-bundle-v9-NON-ES-rx1024.tar
 > [!WARNING]
 > **Urgent notice for v8 / v1.0.0 users:** upgrade to `v9 / v1.0.1` as soon
 > as possible. Bundle v8 can fill the modem root filesystem because repeated
-> IPA dedupe snapshots are written under `/root/ipa_stabilize_backups`. Once
+> IPA dedupe snapshots are written under `/root/ipa_stabilize_backups`(known as THE LORENZ FIX). Once
 > rootfs reaches 100%, QCMAP configuration files may be truncated, causing WAN
 > routing failure even when PCIe and the WebUI still appear to work.
 
